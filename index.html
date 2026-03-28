@@ -34,6 +34,8 @@
     button { cursor: pointer; }
     button:active { opacity: 0.75; }
     .screen { display: none; min-height: 100svh; flex-direction: column; }
+    .update-banner { position: fixed; top: 0; left: 0; right: 0; z-index: 999; background: var(--teal); color: #000; display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; font-size: 14px; font-weight: 600; transform: translateY(-100%); transition: transform 0.3s ease; }
+    .update-banner.visible { transform: translateY(0); }
     .screen.active { display: flex; }
 
     /* ── TOPBAR ── */
@@ -190,6 +192,11 @@
   </style>
 </head>
 <body>
+
+<div class="update-banner" id="update-banner">
+  🔄 Neue Version verfügbar
+  <button onclick="applyUpdate()" style="background:#000;border:none;border-radius:8px;color:var(--teal);font-size:13px;font-weight:700;padding:6px 14px;font-family:var(--sans);">Jetzt laden</button>
+</div>
 
 <!-- HOME -->
 <div id="home" class="screen active">
@@ -482,11 +489,12 @@ function showScreen(id) {
   if (id === 'dashboard-screen') renderDashboard();
   if (id === 'plan-screen') renderPlanEditor();
   if (id === 'home') updateHomeStats();
+checkForUpdate();
 // show version
 (function() {
   const v = document.getElementById('app-version');
   if (v) {
-    const raw = 'gym-v1774699675089';
+    const raw = 'gym-v1774699897859';
     const ts = raw.replace('gym-v','');
     if (ts && !ts.includes('BUILD')) {
       const d = new Date(parseInt(ts));
@@ -1209,7 +1217,7 @@ async function deployToGitHub() {
     // Bump build version so service worker cache is invalidated
   const buildNum = Date.now();
   let html = '<!DOCTYPE html>' + document.documentElement.outerHTML;
-  html = html.replace(/gym-v1774699675089/g, 'gym-v' + buildNum);
+  html = html.replace(/gym-v1774699897859/g, 'gym-v' + buildNum);
   const encoded = btoa(unescape(encodeURIComponent(html)));
 
     const body = { message: 'Update gym app ' + new Date().toISOString().slice(0,10), content: encoded };
@@ -1275,14 +1283,53 @@ function exportCSV() {
 }
 
 // ═══════════════════════════════════════════════════════════
+// UPDATE CHECK
+// ═══════════════════════════════════════════════════════════
+let pendingWorker = null;
+
+function checkForUpdate() {
+  if (!('serviceWorker' in navigator)) return;
+  navigator.serviceWorker.getRegistration().then(reg => {
+    if (!reg) return;
+    // listen for new worker found
+    reg.addEventListener('updatefound', () => {
+      const newWorker = reg.installing;
+      newWorker.addEventListener('statechange', () => {
+        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+          // new version ready — show banner
+          pendingWorker = newWorker;
+          document.getElementById('update-banner').classList.add('visible');
+        }
+      });
+    });
+    // also check right now
+    reg.update().catch(() => {});
+  });
+  // also handle controller change (worker activated)
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    window.location.reload();
+  });
+}
+
+function applyUpdate() {
+  if (pendingWorker) {
+    pendingWorker.postMessage({ type: 'SKIP_WAITING' });
+  } else {
+    // fallback: clear caches and reload
+    caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).then(() => window.location.reload());
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════
 updateHomeStats();
+checkForUpdate();
 // show version
 (function() {
   const v = document.getElementById('app-version');
   if (v) {
-    const raw = 'gym-v1774699675089';
+    const raw = 'gym-v1774699897859';
     const ts = raw.replace('gym-v','');
     if (ts && !ts.includes('BUILD')) {
       const d = new Date(parseInt(ts));
@@ -1303,11 +1350,14 @@ updateHomeStats();
 <!-- PWA Service Worker -->
 <script>
 if ('serviceWorker' in navigator) {
-  const CACHE_VERSION = 'gym-v1774699675089';
+  const CACHE_VERSION = 'gym-v1774699897859';
   const sw = `
     const CACHE = '${CACHE_VERSION}';
     self.addEventListener('install', e => {
       self.skipWaiting();
+    });
+    self.addEventListener('message', e => {
+      if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
     });
     self.addEventListener('activate', e => {
       e.waitUntil(
