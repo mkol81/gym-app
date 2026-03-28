@@ -209,7 +209,7 @@
     <button class="big-btn btn-dash" onclick="showScreen('dashboard-screen')">📊 Dashboard</button>
     <button class="big-btn btn-dark" onclick="showScreen('plan-screen')">✏️ Plan bearbeiten</button>
     <div style="margin-top:16px;background:var(--bg3);border-radius:12px;padding:10px 14px;text-align:left;font-size:12px;color:var(--muted);line-height:1.7;">
-      <span style="color:var(--teal);font-weight:700;">Neu:</span> EG+Gewicht · Manuelles Training · Deploy-Button
+      <span style="color:var(--teal);font-weight:700;">Neu:</span> Update-Banner · CSV Export · EG+Gewicht
     </div>
     <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:16px;">
       <div id="deploy-status" style="font-size:12px;color:var(--muted);text-align:center;margin-bottom:10px;min-height:16px;">⏳ Verbinde…</div>
@@ -494,7 +494,7 @@ checkForUpdate();
 (function() {
   const v = document.getElementById('app-version');
   if (v) {
-    const raw = 'gym-v1774700082043';
+    const raw = 'gym-v1774700393793';
     const ts = raw.replace('gym-v','');
     if (ts && !ts.includes('BUILD')) {
       const d = new Date(parseInt(ts));
@@ -1217,7 +1217,7 @@ async function deployToGitHub() {
     // Bump build version so service worker cache is invalidated
   const buildNum = Date.now();
   let html = '<!DOCTYPE html>' + document.documentElement.outerHTML;
-  html = html.replace(/gym-v1774700082043/g, 'gym-v' + buildNum);
+  html = html.replace(/gym-v1774700393793/g, 'gym-v' + buildNum);
   const encoded = btoa(unescape(encodeURIComponent(html)));
 
     const body = { message: 'Update gym app ' + new Date().toISOString().slice(0,10), content: encoded };
@@ -1329,7 +1329,7 @@ checkForUpdate();
 (function() {
   const v = document.getElementById('app-version');
   if (v) {
-    const raw = 'gym-v1774700082043';
+    const raw = 'gym-v1774700393793';
     const ts = raw.replace('gym-v','');
     if (ts && !ts.includes('BUILD')) {
       const d = new Date(parseInt(ts));
@@ -1350,7 +1350,7 @@ checkForUpdate();
 <!-- PWA Service Worker -->
 <script>
 if ('serviceWorker' in navigator) {
-  const CACHE_VERSION = 'gym-v1774700082043';
+  const CACHE_VERSION = 'gym-v1774700393793';
   const sw = `
     const CACHE = '${CACHE_VERSION}';
     self.addEventListener('install', e => {
