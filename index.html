@@ -196,7 +196,7 @@
   <div class="home-card">
     <div class="home-icon">🏋️</div>
     <h1 class="home-title">Gym App</h1>
-    <p class="home-sub" id="home-sub">3 Trainings · 10 Übungen</p>
+    <p class="home-sub" id="home-sub">0 Trainings · 10 Übungen</p>
     <p style="font-size:11px;color:var(--faint);font-family:var(--mono);margin-bottom:20px;letter-spacing:0.5px;" id="app-version">v2026-03-28 (lokal)</p>
     <button class="big-btn btn-primary" onclick="goTracker()">💪 Training starten</button>
     <button class="big-btn btn-dash" onclick="showScreen('dashboard-screen')">📊 Dashboard</button>
@@ -213,6 +213,9 @@
         </button>
       </div>
       <div style="font-size:11px;color:var(--faint);text-align:center;margin-top:6px;">mkol81/gym-app → GitHub Pages</div>
+      <button onclick="exportCSV()" style="margin-top:10px;width:100%;background:transparent;border:1px solid var(--border);border-radius:10px;color:var(--muted);font-size:13px;padding:9px;font-family:var(--sans);">
+        ↓ Export als CSV
+      </button>
     </div>
   </div>
 </div>
@@ -483,7 +486,7 @@ function showScreen(id) {
 (function() {
   const v = document.getElementById('app-version');
   if (v) {
-    const raw = 'gym-v1774691747382';
+    const raw = 'gym-v1774699339772';
     const ts = raw.replace('gym-v','');
     if (ts && !ts.includes('BUILD')) {
       const d = new Date(parseInt(ts));
@@ -1206,7 +1209,7 @@ async function deployToGitHub() {
     // Bump build version so service worker cache is invalidated
   const buildNum = Date.now();
   let html = '<!DOCTYPE html>' + document.documentElement.outerHTML;
-  html = html.replace(/gym-v1774691747382/g, 'gym-v' + buildNum);
+  html = html.replace(/gym-v1774699339772/g, 'gym-v' + buildNum);
   const encoded = btoa(unescape(encodeURIComponent(html)));
 
     const body = { message: 'Update gym app ' + new Date().toISOString().slice(0,10), content: encoded };
@@ -1231,6 +1234,47 @@ async function deployToGitHub() {
 }
 
 // ═══════════════════════════════════════════════════════════
+// EXPORT
+// ═══════════════════════════════════════════════════════════
+function exportCSV() {
+  if (!trainings.length) {
+    alert('Noch keine Trainingsdaten vorhanden.');
+    return;
+  }
+
+  const rows = [];
+  // header
+  rows.push(['Datum', 'Dauer (min)', 'Muskelgruppe', 'Übung', 'Satz', 'Gewicht (kg)', 'Wiederholungen'].join(','));
+
+  trainings.forEach(t => {
+    t.exercises.forEach(ex => {
+      ex.sets.forEach((s, i) => {
+        rows.push([
+          t.date,
+          t.duration_min || '',
+          ex.group,
+          '"' + ex.name + '"',
+          i + 1,
+          s.weight_kg != null ? s.weight_kg : '',
+          s.reps
+        ].join(','));
+      });
+    });
+  });
+
+  const csv = rows.join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'gym-trainings-' + new Date().toISOString().slice(0,10) + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ═══════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════
 updateHomeStats();
@@ -1238,7 +1282,7 @@ updateHomeStats();
 (function() {
   const v = document.getElementById('app-version');
   if (v) {
-    const raw = 'gym-v1774691747382';
+    const raw = 'gym-v1774699339772';
     const ts = raw.replace('gym-v','');
     if (ts && !ts.includes('BUILD')) {
       const d = new Date(parseInt(ts));
@@ -1259,7 +1303,7 @@ updateHomeStats();
 <!-- PWA Service Worker -->
 <script>
 if ('serviceWorker' in navigator) {
-  const CACHE_VERSION = 'gym-v1774691747382';
+  const CACHE_VERSION = 'gym-v1774699339772';
   const sw = `
     const CACHE = '${CACHE_VERSION}';
     self.addEventListener('install', e => {
