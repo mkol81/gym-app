@@ -209,7 +209,7 @@
     <button class="big-btn btn-dash" onclick="showScreen('dashboard-screen')">📊 Dashboard</button>
     <button class="big-btn btn-dark" onclick="showScreen('plan-screen')">✏️ Plan bearbeiten</button>
     <div style="margin-top:16px;background:var(--bg3);border-radius:12px;padding:10px 14px;text-align:left;font-size:12px;color:var(--muted);line-height:1.7;">
-      <span style="color:var(--teal);font-weight:700;">Neu:</span> Update-Banner · CSV Export · EG+Gewicht
+      <span style="color:var(--teal);font-weight:700;">Neu:</span> Auto-Update Check · CSV Export · EG+Gewicht
     </div>
     <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:16px;">
       <div id="deploy-status" style="font-size:12px;color:var(--muted);text-align:center;margin-bottom:10px;min-height:16px;">⏳ Verbinde…</div>
@@ -494,7 +494,7 @@ checkForUpdate();
 (function() {
   const v = document.getElementById('app-version');
   if (v) {
-    const raw = 'gym-v1774700393793';
+    const raw = 'gym-v1774700478348';
     const ts = raw.replace('gym-v','');
     if (ts && !ts.includes('BUILD')) {
       const d = new Date(parseInt(ts));
@@ -1214,10 +1214,11 @@ async function deployToGitHub() {
     } catch(e) {}
 
     // get current page HTML
-    // Bump build version so service worker cache is invalidated
+    // Bump build version — replaces ALL 1774700478348 placeholders including LOCAL_VERSION
   const buildNum = Date.now();
   let html = '<!DOCTYPE html>' + document.documentElement.outerHTML;
-  html = html.replace(/gym-v1774700393793/g, 'gym-v' + buildNum);
+  html = html.replace(/gym-v1774700478348/g, 'gym-v' + buildNum);
+  html = html.replace(/1774700478348/g, buildNum);
   const encoded = btoa(unescape(encodeURIComponent(html)));
 
     const body = { message: 'Update gym app ' + new Date().toISOString().slice(0,10), content: encoded };
@@ -1287,37 +1288,30 @@ function exportCSV() {
 // ═══════════════════════════════════════════════════════════
 let pendingWorker = null;
 
-function checkForUpdate() {
-  if (!('serviceWorker' in navigator)) return;
-  navigator.serviceWorker.getRegistration().then(reg => {
-    if (!reg) return;
-    // listen for new worker found
-    reg.addEventListener('updatefound', () => {
-      const newWorker = reg.installing;
-      newWorker.addEventListener('statechange', () => {
-        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-          // new version ready — show banner
-          pendingWorker = newWorker;
-          document.getElementById('update-banner').classList.add('visible');
-        }
-      });
-    });
-    // also check right now
-    reg.update().catch(() => {});
-  });
-  // also handle controller change (worker activated)
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    window.location.reload();
-  });
+// current build token — replaced on every deploy
+const LOCAL_VERSION = 'gym-v1774700478348';
+
+async function checkForUpdate() {
+  try {
+    // fetch the live index.html from GitHub Pages with cache-busting
+    const resp = await fetch('https://mkol81.github.io/gym-app/index.html?t=' + Date.now(), { cache: 'no-store' });
+    if (!resp.ok) return;
+    const html = await resp.text();
+    // extract the version token from the fetched file
+    const match = html.match(/const LOCAL_VERSION = '(gym-v[^']+)'/);
+    if (!match) return;
+    const remoteVersion = match[1];
+    // if remote version differs and is not a placeholder, show banner
+    if (remoteVersion !== LOCAL_VERSION && !remoteVersion.includes('1774700478348') && !LOCAL_VERSION.includes('1774700478348')) {
+      document.getElementById('update-banner').classList.add('visible');
+    }
+  } catch(e) {
+    // offline or fetch failed — silently ignore
+  }
 }
 
 function applyUpdate() {
-  if (pendingWorker) {
-    pendingWorker.postMessage({ type: 'SKIP_WAITING' });
-  } else {
-    // fallback: clear caches and reload
-    caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).then(() => window.location.reload());
-  }
+  caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).then(() => window.location.reload());
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1329,7 +1323,7 @@ checkForUpdate();
 (function() {
   const v = document.getElementById('app-version');
   if (v) {
-    const raw = 'gym-v1774700393793';
+    const raw = 'gym-v1774700478348';
     const ts = raw.replace('gym-v','');
     if (ts && !ts.includes('BUILD')) {
       const d = new Date(parseInt(ts));
@@ -1350,7 +1344,7 @@ checkForUpdate();
 <!-- PWA Service Worker -->
 <script>
 if ('serviceWorker' in navigator) {
-  const CACHE_VERSION = 'gym-v1774700393793';
+  const CACHE_VERSION = 'gym-v1774700478348';
   const sw = `
     const CACHE = '${CACHE_VERSION}';
     self.addEventListener('install', e => {
