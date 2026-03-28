@@ -1,6 +1,4 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
+<!DOCTYPE html><html lang="de"><head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -9,7 +7,7 @@
   <meta name="theme-color" content="#0a0a0f">
   <title>Gym App</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&amp;family=DM+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -198,16 +196,18 @@
   <div class="home-card">
     <div class="home-icon">🏋️</div>
     <h1 class="home-title">Gym App</h1>
-    <p class="home-sub" id="home-sub">0 Trainings · 0 Übungen</p>
-    <p style="font-size:11px;color:var(--faint);font-family:var(--mono);margin-bottom:20px;letter-spacing:0.5px;" id="app-version">v__BUILD__</p>
+    <p class="home-sub" id="home-sub">3 Trainings · 10 Übungen</p>
+    <p style="font-size:11px;color:var(--faint);font-family:var(--mono);margin-bottom:20px;letter-spacing:0.5px;" id="app-version">v2026-03-28 (lokal)</p>
     <button class="big-btn btn-primary" onclick="goTracker()">💪 Training starten</button>
     <button class="big-btn btn-dash" onclick="showScreen('dashboard-screen')">📊 Dashboard</button>
     <button class="big-btn btn-dark" onclick="showScreen('plan-screen')">✏️ Plan bearbeiten</button>
-    <div style="margin-top:24px;border-top:1px solid var(--border);padding-top:16px;">
-      <div id="deploy-status" style="font-size:12px;color:var(--muted);text-align:center;margin-bottom:10px;min-height:16px;"></div>
+    <div style="margin-top:16px;background:var(--bg3);border-radius:12px;padding:10px 14px;text-align:left;font-size:12px;color:var(--muted);line-height:1.7;">
+      <span style="color:var(--teal);font-weight:700;">Neu:</span> EG+Gewicht · Manuelles Training · Deploy-Button
+    </div>
+    <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:16px;">
+      <div id="deploy-status" style="font-size:12px;color:var(--muted);text-align:center;margin-bottom:10px;min-height:16px;">⏳ Verbinde…</div>
       <div style="display:flex;gap:8px;">
-        <input id="gh-token" type="password" placeholder="GitHub Token" autocomplete="off"
-          style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:13px;padding:9px 12px;font-family:var(--sans);">
+        <input id="gh-token" type="password" placeholder="GitHub Token" autocomplete="off" style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:13px;padding:9px 12px;font-family:var(--sans);">
         <button onclick="deployToGitHub()" style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--muted);font-size:13px;padding:9px 14px;font-weight:700;white-space:nowrap;font-family:var(--sans);">
           ↑ Deploy
         </button>
@@ -483,7 +483,7 @@ function showScreen(id) {
 (function() {
   const v = document.getElementById('app-version');
   if (v) {
-    const raw = 'gym-v__BUILD__';
+    const raw = 'gym-v1774691747382';
     const ts = raw.replace('gym-v','');
     if (ts && !ts.includes('BUILD')) {
       const d = new Date(parseInt(ts));
@@ -1206,7 +1206,7 @@ async function deployToGitHub() {
     // Bump build version so service worker cache is invalidated
   const buildNum = Date.now();
   let html = '<!DOCTYPE html>' + document.documentElement.outerHTML;
-  html = html.replace(/gym-v__BUILD__/g, 'gym-v' + buildNum);
+  html = html.replace(/gym-v1774691747382/g, 'gym-v' + buildNum);
   const encoded = btoa(unescape(encodeURIComponent(html)));
 
     const body = { message: 'Update gym app ' + new Date().toISOString().slice(0,10), content: encoded };
@@ -1238,7 +1238,7 @@ updateHomeStats();
 (function() {
   const v = document.getElementById('app-version');
   if (v) {
-    const raw = 'gym-v__BUILD__';
+    const raw = 'gym-v1774691747382';
     const ts = raw.replace('gym-v','');
     if (ts && !ts.includes('BUILD')) {
       const d = new Date(parseInt(ts));
@@ -1259,7 +1259,7 @@ updateHomeStats();
 <!-- PWA Service Worker -->
 <script>
 if ('serviceWorker' in navigator) {
-  const CACHE_VERSION = 'gym-v__BUILD__';
+  const CACHE_VERSION = 'gym-v1774691747382';
   const sw = `
     const CACHE = '${CACHE_VERSION}';
     self.addEventListener('install', e => {
@@ -1288,5 +1288,6 @@ if ('serviceWorker' in navigator) {
   }).catch(()=>{});
 }
 </script>
-</body>
-</html>
+
+
+</body></html>
