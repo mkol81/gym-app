@@ -495,7 +495,7 @@ setTimeout(checkForUpdate, 2000);
 (function() {
   const v = document.getElementById('app-version');
   if (v) {
-    const raw = 'gym-v1774702134854';
+    const raw = 'gym-v1774702211967';
     const ts = raw.replace('gym-v','');
     if (ts && !ts.includes('BUILD')) {
       const d = new Date(parseInt(ts));
@@ -1215,11 +1215,11 @@ async function deployToGitHub() {
     } catch(e) {}
 
     // get current page HTML
-    // Bump build version — replaces ALL 1774702134854 placeholders including LOCAL_VERSION
+    // Bump build version — replaces ALL 1774702211967 placeholders including LOCAL_VERSION
   const buildNum = Date.now();
   let html = '<!DOCTYPE html>' + document.documentElement.outerHTML;
-  html = html.replace(/gym-v1774702134854/g, 'gym-v' + buildNum);
-  html = html.replace(/1774702134854/g, buildNum);
+  html = html.replace(/gym-v1774702211967/g, 'gym-v' + buildNum);
+  html = html.replace(/1774702211967/g, buildNum);
   const encoded = btoa(unescape(encodeURIComponent(html)));
 
     const body = { message: 'Update gym app ' + new Date().toISOString().slice(0,10), content: encoded };
@@ -1290,7 +1290,7 @@ function exportCSV() {
 let pendingWorker = null;
 
 // current build token — replaced on every deploy
-const LOCAL_VERSION = 'gym-v1774702134854';
+const LOCAL_VERSION = 'gym-v1774702211967';
 
 async function checkForUpdate() {
   try {
@@ -1300,8 +1300,8 @@ async function checkForUpdate() {
     const match = html.match(/const LOCAL_VERSION = '(gym-v[^']+)'/);
     if (!match) return;
     const remoteVersion = match[1];
-    const remoteIsReal = !remoteVersion.includes('1774702134854');
-    const localIsStale = LOCAL_VERSION.includes('1774702134854') || remoteVersion !== LOCAL_VERSION;
+    const remoteIsReal = !remoteVersion.includes('1774702211967');
+    const localIsStale = LOCAL_VERSION.includes('1774702211967') || remoteVersion !== LOCAL_VERSION;
     if (remoteIsReal && localIsStale) {
       document.getElementById('update-banner').classList.add('visible');
     }
@@ -1312,7 +1312,22 @@ async function checkForUpdate() {
 }
 
 function applyUpdate() {
-  caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).then(() => window.location.reload());
+  const btn = document.querySelector('#update-banner button');
+  if (btn) btn.textContent = '⏳ Laden...';
+  caches.keys()
+    .then(keys => Promise.all(keys.map(k => caches.delete(k))))
+    .then(() => {
+      // unregister service worker first, then reload
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(regs => {
+          Promise.all(regs.map(r => r.unregister())).then(() => {
+            window.location.href = window.location.href.split('?')[0] + '?v=' + Date.now();
+          });
+        });
+      } else {
+        window.location.href = window.location.href.split('?')[0] + '?v=' + Date.now();
+      }
+    });
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -1325,7 +1340,7 @@ setTimeout(checkForUpdate, 2000);
 (function() {
   const v = document.getElementById('app-version');
   if (v) {
-    const raw = 'gym-v1774702134854';
+    const raw = 'gym-v1774702211967';
     const ts = raw.replace('gym-v','');
     if (ts && !ts.includes('BUILD')) {
       const d = new Date(parseInt(ts));
@@ -1346,7 +1361,7 @@ setTimeout(checkForUpdate, 2000);
 <!-- PWA Service Worker -->
 <script>
 if ('serviceWorker' in navigator) {
-  const CACHE_VERSION = 'gym-v1774702134854';
+  const CACHE_VERSION = 'gym-v1774702211967';
   const sw = `
     const CACHE = '${CACHE_VERSION}';
     self.addEventListener('install', e => {
