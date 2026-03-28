@@ -486,7 +486,7 @@ function showScreen(id) {
 (function() {
   const v = document.getElementById('app-version');
   if (v) {
-    const raw = 'gym-v1774699339772';
+    const raw = 'gym-v1774699675089';
     const ts = raw.replace('gym-v','');
     if (ts && !ts.includes('BUILD')) {
       const d = new Date(parseInt(ts));
@@ -1209,7 +1209,7 @@ async function deployToGitHub() {
     // Bump build version so service worker cache is invalidated
   const buildNum = Date.now();
   let html = '<!DOCTYPE html>' + document.documentElement.outerHTML;
-  html = html.replace(/gym-v1774699339772/g, 'gym-v' + buildNum);
+  html = html.replace(/gym-v1774699675089/g, 'gym-v' + buildNum);
   const encoded = btoa(unescape(encodeURIComponent(html)));
 
     const body = { message: 'Update gym app ' + new Date().toISOString().slice(0,10), content: encoded };
@@ -1282,7 +1282,7 @@ updateHomeStats();
 (function() {
   const v = document.getElementById('app-version');
   if (v) {
-    const raw = 'gym-v1774699339772';
+    const raw = 'gym-v1774699675089';
     const ts = raw.replace('gym-v','');
     if (ts && !ts.includes('BUILD')) {
       const d = new Date(parseInt(ts));
@@ -1303,7 +1303,7 @@ updateHomeStats();
 <!-- PWA Service Worker -->
 <script>
 if ('serviceWorker' in navigator) {
-  const CACHE_VERSION = 'gym-v1774699339772';
+  const CACHE_VERSION = 'gym-v1774699675089';
   const sw = `
     const CACHE = '${CACHE_VERSION}';
     self.addEventListener('install', e => {
