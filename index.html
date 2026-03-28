@@ -204,7 +204,7 @@
     <div class="home-icon">🏋️</div>
     <h1 class="home-title">Gym App</h1>
     <p class="home-sub" id="home-sub">0 Trainings · 10 Übungen</p>
-    <p style="font-size:11px;color:var(--faint);font-family:var(--mono);margin-bottom:20px;letter-spacing:0.5px;" id="app-version">v2026-03-28 (lokal) r:134121 l:UILD__ show:true</p>
+    <p style="font-size:11px;color:var(--faint);font-family:var(--mono);margin-bottom:20px;letter-spacing:0.5px;" id="app-version">v2026-03-28 (lokal) r:246075 l:UILD__ show:true</p>
     <button class="big-btn btn-primary" onclick="goTracker()">💪 Training starten</button>
     <button class="big-btn btn-dash" onclick="showScreen('dashboard-screen')">📊 Dashboard</button>
     <button class="big-btn btn-dark" onclick="showScreen('plan-screen')">✏️ Plan bearbeiten</button>
@@ -494,7 +494,7 @@ checkForUpdate();
 (function() {
   const v = document.getElementById('app-version');
   if (v) {
-    const raw = 'gym-v1774701246075';
+    const raw = 'gym-v1774701352393';
     const ts = raw.replace('gym-v','');
     if (ts && !ts.includes('BUILD')) {
       const d = new Date(parseInt(ts));
@@ -1214,11 +1214,11 @@ async function deployToGitHub() {
     } catch(e) {}
 
     // get current page HTML
-    // Bump build version — replaces ALL 1774701246075 placeholders including LOCAL_VERSION
+    // Bump build version — replaces ALL 1774701352393 placeholders including LOCAL_VERSION
   const buildNum = Date.now();
   let html = '<!DOCTYPE html>' + document.documentElement.outerHTML;
-  html = html.replace(/gym-v1774701246075/g, 'gym-v' + buildNum);
-  html = html.replace(/1774701246075/g, buildNum);
+  html = html.replace(/gym-v1774701352393/g, 'gym-v' + buildNum);
+  html = html.replace(/1774701352393/g, buildNum);
   const encoded = btoa(unescape(encodeURIComponent(html)));
 
     const body = { message: 'Update gym app ' + new Date().toISOString().slice(0,10), content: encoded };
@@ -1289,7 +1289,7 @@ function exportCSV() {
 let pendingWorker = null;
 
 // current build token — replaced on every deploy
-const LOCAL_VERSION = 'gym-v1774701246075';
+const LOCAL_VERSION = 'gym-v1774701352393';
 
 async function checkForUpdate() {
   const dbg = document.getElementById('app-version');
@@ -1300,8 +1300,8 @@ async function checkForUpdate() {
     const match = html.match(/const LOCAL_VERSION = '(gym-v[^']+)'/);
     if (!match) { if(dbg) dbg.textContent += ' [no-match]'; return; }
     const remoteVersion = match[1];
-    const remoteIsReal = !remoteVersion.includes('1774701246075');
-    const localIsStale = LOCAL_VERSION.includes('1774701246075') || remoteVersion !== LOCAL_VERSION;
+    const remoteIsReal = !remoteVersion.includes('1774701352393');
+    const localIsStale = LOCAL_VERSION.includes('1774701352393') || remoteVersion !== LOCAL_VERSION;
     if(dbg) dbg.textContent += ' r:'+remoteVersion.slice(-6)+' l:'+LOCAL_VERSION.slice(-6)+' show:'+(remoteIsReal&&localIsStale);
     if (remoteIsReal && localIsStale) {
       document.getElementById('update-banner').classList.add('visible');
@@ -1325,7 +1325,7 @@ checkForUpdate();
 (function() {
   const v = document.getElementById('app-version');
   if (v) {
-    const raw = 'gym-v1774701246075';
+    const raw = 'gym-v1774701352393';
     const ts = raw.replace('gym-v','');
     if (ts && !ts.includes('BUILD')) {
       const d = new Date(parseInt(ts));
@@ -1346,7 +1346,7 @@ checkForUpdate();
 <!-- PWA Service Worker -->
 <script>
 if ('serviceWorker' in navigator) {
-  const CACHE_VERSION = 'gym-v1774701246075';
+  const CACHE_VERSION = 'gym-v1774701352393';
   const sw = `
     const CACHE = '${CACHE_VERSION}';
     self.addEventListener('install', e => {
