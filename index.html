@@ -1,6 +1,4 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
+<!DOCTYPE html><html lang="de"><head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -9,7 +7,7 @@
   <meta name="theme-color" content="#0a0a0f">
   <title>Gym App</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&amp;family=DM+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -95,6 +93,10 @@
     .input-lbl { font-size: 11px; color: rgba(255,255,255,0.4); letter-spacing: 1px; text-transform: uppercase; }
     .num-input { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; color: #fff; font-size: 28px; font-weight: 700; text-align: center; padding: 12px 8px; width: 100%; font-family: var(--mono); }
     .eg-box { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; color: rgba(255,255,255,0.4); font-size: 20px; padding: 12px 8px; text-align: center; }
+    .eg-wrap { display: flex; flex-direction: column; gap: 6px; }
+    .eg-tag { font-size: 11px; color: rgba(255,255,255,0.3); text-align: center; letter-spacing: 1px; text-transform: uppercase; }
+    .eg-plus-row { display: flex; align-items: center; gap: 6px; }
+    .eg-label { font-size: 12px; color: rgba(255,255,255,0.3); white-space: nowrap; }
     .input-sep { font-size: 24px; color: rgba(255,255,255,0.2); margin-top: 18px; }
     .confirm-btn { width: 100%; border: none; border-radius: 14px; padding: 14px; font-size: 16px; font-weight: 700; color: #fff; letter-spacing: 0.5px; font-family: var(--sans); }
     .mini-log { background: var(--bg3); border-radius: 14px; padding: 12px 16px; margin-bottom: 12px; width: 100%; }
@@ -194,10 +196,20 @@
   <div class="home-card">
     <div class="home-icon">🏋️</div>
     <h1 class="home-title">Gym App</h1>
-    <p class="home-sub" id="home-sub">0 Trainings · 0 Übungen</p>
+    <p class="home-sub" id="home-sub">3 Trainings · 10 Übungen</p>
     <button class="big-btn btn-primary" onclick="goTracker()">💪 Training starten</button>
     <button class="big-btn btn-dash" onclick="showScreen('dashboard-screen')">📊 Dashboard</button>
     <button class="big-btn btn-dark" onclick="showScreen('plan-screen')">✏️ Plan bearbeiten</button>
+    <div style="margin-top:24px;border-top:1px solid var(--border);padding-top:16px;">
+      <div id="deploy-status" style="font-size:12px;color:var(--muted);text-align:center;margin-bottom:10px;min-height:16px;">⏳ Verbinde…</div>
+      <div style="display:flex;gap:8px;">
+        <input id="gh-token" type="password" placeholder="GitHub Token" autocomplete="off" style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:13px;padding:9px 12px;font-family:var(--sans);">
+        <button onclick="deployToGitHub()" style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--muted);font-size:13px;padding:9px 14px;font-weight:700;white-space:nowrap;font-family:var(--sans);">
+          ↑ Deploy
+        </button>
+      </div>
+      <div style="font-size:11px;color:var(--faint);text-align:center;margin-top:6px;">mkol81/gym-app → GitHub Pages</div>
+    </div>
   </div>
 </div>
 
@@ -436,6 +448,15 @@ function lastTrainingData(exName) {
   }
   return null;
 }
+function fmtWeight(w) {
+  if (w == null || w === '' || w === 0 || w === '0') return 'EG';
+  return 'EG+' + w + ' kg';
+}
+function fmtWeightPlan(w) {
+  if (!w) return 'EG';
+  if (Array.isArray(w)) return w.join('/') + ' kg';
+  return w + ' kg';
+}
 function maxW(sets) {
   const ws = sets.filter(s => s.weight_kg != null).map(s => s.weight_kg);
   return ws.length ? Math.max(...ws) : null;
@@ -567,8 +588,20 @@ function renderExercise() {
   const wlbl = document.getElementById('weight-lbl');
   const wwrap = document.getElementById('weight-input-wrap');
   if (ex.defaultWeight === null) {
-    wlbl.textContent = 'Eigengewicht';
-    wwrap.innerHTML = `<div class="eg-box">EG</div>`;
+    wlbl.textContent = 'Gewicht';
+    const savedW = le.sets[si].weight || '';
+    wwrap.innerHTML = `
+      <div class="eg-wrap">
+        <div class="eg-plus-row">
+          <div class="eg-box" style="flex:0 0 52px">EG</div>
+          <span class="eg-label">+</span>
+          <input class="num-input" id="weight-input" type="number" inputmode="decimal"
+            placeholder="0" value="${savedW}"
+            style="font-size:22px;">
+          <span class="eg-label" style="font-size:13px">kg</span>
+        </div>
+        <div class="eg-tag">0 = nur Eigengewicht</div>
+      </div>`;
   } else {
     wlbl.textContent = 'Gewicht (kg)';
     wwrap.innerHTML = `<input class="num-input" id="weight-input" type="number" inputmode="decimal" value="${le.sets[si].weight||getW(ex,si)}">`;
@@ -587,7 +620,7 @@ function renderExercise() {
     ml.innerHTML = le.sets.map((s,i) => s.done ? `
       <div class="mini-log-row">
         <span style="color:${ex.accent}">✓ Satz ${i+1}:</span>
-        <span> ${s.weight ? s.weight+' kg' : 'EG'} × ${s.reps}</span>
+        <span> ${fmtWeight(s.weight)} × ${s.reps}</span>
       </div>` : '').join('');
   } else {
     ml.style.display = 'none';
@@ -621,7 +654,10 @@ function confirmSet() {
 
   // read inputs
   const wi = document.getElementById('weight-input');
-  const weight = wi ? wi.value : '';
+  const ex2 = tState.all[ei];
+  // For EG exercises: empty or "0" means pure bodyweight (store as '')
+  let weight = wi ? wi.value : '';
+  if (ex2.defaultWeight === null && (weight === '0' || weight === '')) weight = '';
   const reps = document.getElementById('reps-input').value;
 
   le.sets[si] = { weight, reps, done: true };
@@ -685,7 +721,7 @@ function renderDoneSummary() {
             ${ex.sets.map((s,i) => `
               <div class="summary-set">
                 <div class="summary-set-lbl">Satz ${i+1}</div>
-                <div class="summary-set-val">${s.weight_kg ? s.weight_kg+' kg' : 'EG'} × ${s.reps}</div>
+                <div class="summary-set-val">${fmtWeight(s.weight_kg)} × ${s.reps}</div>
               </div>`).join('')}
           </div>
         </div>`).join('')}
@@ -907,7 +943,7 @@ function renderHistory() {
           <span class="hist-ex-name">${ex.name}</span>
         </div>
         <div class="hist-sets">
-          ${ex.sets.map((s,i)=>`<div class="hist-set"><div class="hist-set-lbl">Satz ${i+1}</div><div class="hist-set-val">${s.weight_kg?s.weight_kg+' kg':'EG'} × ${s.reps}</div></div>`).join('')}
+          ${ex.sets.map((s,i)=>`<div class="hist-set"><div class="hist-set-lbl">Satz ${i+1}</div><div class="hist-set-val">${fmtWeight(s.weight_kg)} × ${s.reps}</div></div>`).join('')}
         </div>
       </div>`).join('')}
     </div>` : '';
@@ -1064,7 +1100,7 @@ function renderPlanGroups() {
         <div class="plan-ex-row">
           <div>
             <div class="plan-ex-name">${ex.name}</div>
-            <div class="plan-ex-meta">${ex.defaultWeight?(Array.isArray(ex.defaultWeight)?ex.defaultWeight.join('/'):ex.defaultWeight)+' kg':'EG'} · ${ex.sets}×${ex.reps}</div>
+            <div class="plan-ex-meta">${fmtWeightPlan(ex.defaultWeight)} · ${ex.sets}×${ex.reps}</div>
           </div>
           <button class="plan-del-btn" onclick="delPlanEx(${gi},${ei})">🗑</button>
         </div>
@@ -1121,6 +1157,53 @@ function savePlan() {
 }
 
 // ═══════════════════════════════════════════════════════════
+// DEPLOY
+// ═══════════════════════════════════════════════════════════
+async function deployToGitHub() {
+  const token = document.getElementById('gh-token').value.trim();
+  const status = document.getElementById('deploy-status');
+  if (!token) { status.style.color='var(--red)'; status.textContent='Token eingeben'; return; }
+
+  status.style.color='var(--muted)'; status.textContent='⏳ Verbinde…';
+
+  const USER = 'mkol81', REPO = 'gym-app', FILE = 'index.html';
+  const url = `https://api.github.com/repos/${USER}/${REPO}/contents/${FILE}`;
+  const headers = { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.v3+json', 'Content-Type': 'application/json' };
+
+  try {
+    // get current SHA
+    let sha = null;
+    try {
+      const r = await fetch(url, { headers });
+      if (r.ok) { const d = await r.json(); sha = d.sha; }
+    } catch(e) {}
+
+    // get current page HTML
+    const html = '<!DOCTYPE html>' + document.documentElement.outerHTML;
+    const encoded = btoa(unescape(encodeURIComponent(html)));
+
+    const body = { message: 'Update gym app ' + new Date().toISOString().slice(0,10), content: encoded };
+    if (sha) body.sha = sha;
+
+    status.textContent = '⏳ Uploading…';
+    const resp = await fetch(url, { method: 'PUT', headers, body: JSON.stringify(body) });
+
+    if (resp.ok) {
+      status.style.color = 'var(--teal)';
+      status.textContent = '✓ Deployed! mkol81.github.io/gym-app';
+      document.getElementById('gh-token').value = '';
+    } else {
+      const err = await resp.json();
+      status.style.color = 'var(--red)';
+      status.textContent = '✗ ' + (err.message || resp.status);
+    }
+  } catch(e) {
+    status.style.color = 'var(--red)';
+    status.textContent = '✗ Fehler: ' + e.message;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════
 updateHomeStats();
@@ -1140,5 +1223,6 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register(url).catch(()=>{});
 }
 </script>
-</body>
-</html>
+
+
+</body></html>
