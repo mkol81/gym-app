@@ -205,7 +205,7 @@
     <div class="home-icon">🏋️</div>
     <h1 class="home-title">Gym App</h1>
     <p class="home-sub" id="home-sub">0 Trainings · 10 Übungen</p>
-    <p style="font-size:11px;color:var(--faint);font-family:var(--mono);margin-bottom:20px;letter-spacing:0.5px;" id="app-version">v2026-03-28 (lokal)</p>
+    <p style="font-size:11px;color:var(--faint);font-family:var(--mono);margin-bottom:20px;letter-spacing:0.5px;" id="app-version">v2026-03-29 (lokal)</p>
     <button class="big-btn btn-primary" onclick="goTracker()">💪 Training starten</button>
     <button class="big-btn btn-dash" onclick="showScreen('dashboard-screen')">📊 Dashboard</button>
     <button class="big-btn btn-dark" onclick="showScreen('plan-screen')">✏️ Plan bearbeiten</button>
@@ -293,6 +293,9 @@
         </div>
       </div>
       <button class="confirm-btn" id="confirm-btn" onclick="confirmSet()">✓ Satz bestätigen</button>
+      <button onclick="skipExercise()" style="margin-top:8px;width:100%;background:transparent;border:1px solid rgba(255,255,255,0.1);border-radius:12px;color:rgba(255,255,255,0.3);font-size:13px;padding:10px;font-family:var(--sans);">
+        Übung auslassen
+      </button>
     </div>
     <div class="mini-log" id="mini-log" style="display:none;"></div>
   </div>
@@ -463,9 +466,13 @@ function lastTrainingData(exName) {
   }
   return null;
 }
-function fmtWeight(w) {
-  if (w == null || w === '' || w === 0 || w === '0') return 'EG';
-  return 'EG+' + w + ' kg';
+function fmtWeight(w, isEG) {
+  if (isEG) {
+    if (w == null || w === '' || w === 0 || w === '0') return 'EG';
+    return 'EG+' + w + ' kg';
+  }
+  if (w == null || w === '') return '—';
+  return w + ' kg';
 }
 function fmtWeightPlan(w) {
   if (!w) return 'EG';
@@ -496,7 +503,7 @@ setTimeout(checkForUpdate, 2000);
 (function() {
   const v = document.getElementById('app-version');
   if (v) {
-    const raw = 'gym-v1774702436782';
+    const raw = 'gym-v1774787395759';
     const ts = raw.replace('gym-v','');
     if (ts && !ts.includes('BUILD')) {
       const d = new Date(parseInt(ts));
@@ -657,7 +664,7 @@ function renderExercise() {
     ml.innerHTML = le.sets.map((s,i) => s.done ? `
       <div class="mini-log-row">
         <span style="color:${ex.accent}">✓ Satz ${i+1}:</span>
-        <span> ${fmtWeight(s.weight)} × ${s.reps}</span>
+        <span> ${fmtWeight(s.weight, ex.defaultWeight===null)} × ${s.reps}</span>
       </div>` : '').join('');
   } else {
     ml.style.display = 'none';
@@ -704,21 +711,51 @@ function confirmSet() {
   const isLastEx = ei === tState.all.length - 1;
 
   if (!allDone && nextU >= 0) {
-    // more sets this exercise
+    // more sets on this exercise
     tState.si = nextU;
     startRest();
     renderExercise();
-  } else if (!isLastEx) {
-    // next exercise
-    startRest();
-    const nextIdx = ei + 1;
-    tState.exIdx = nextIdx;
-    const nl = tState.log[nextIdx];
+  } else {
+    // check ALL exercises (not just forward) for any undone sets
+    const total = tState.all.length;
+    // first try forward, then wrap to beginning
+    let nextEx = -1;
+    for (let i = 0; i < total; i++) {
+      const idx = (ei + 1 + i) % total;
+      if (tState.log[idx].sets.some(s => !s.done)) { nextEx = idx; break; }
+    }
+    if (nextEx >= 0) {
+      startRest();
+      tState.exIdx = nextEx;
+      const nl = tState.log[nextEx];
+      const f = nl.sets.findIndex(s => !s.done);
+      tState.si = f >= 0 ? f : 0;
+      renderExercise();
+    } else {
+      // truly nothing left — finish
+      finishTraining();
+    }
+  }
+}
+
+function skipExercise() {
+  // mark all remaining sets of current exercise as skipped (not done)
+  // then move to next exercise with undone sets
+  const ei = tState.exIdx;
+  const total = tState.all.length;
+  let nextEx = -1;
+  for (let i = 1; i < total; i++) {
+    const idx = (ei + i) % total;
+    if (tState.log[idx].sets.some(s => !s.done)) { nextEx = idx; break; }
+  }
+  if (nextEx >= 0) {
+    tState.exIdx = nextEx;
+    const nl = tState.log[nextEx];
     const f = nl.sets.findIndex(s => !s.done);
     tState.si = f >= 0 ? f : 0;
     renderExercise();
   } else {
-    // done!
+    // all others done — finish
     finishTraining();
   }
 }
@@ -731,7 +768,7 @@ function finishTraining() {
     date: today(),
     duration_min: Math.round(tState.secs / 60),
     exercises: tState.log.map(e => ({
-      name: e.name, group: e.group,
+      name: e.name, group: e.group, isEG: e.defaultWeight === null,
       sets: e.sets.filter(s => s.done).map(s => ({
         weight_kg: s.weight ? parseFloat(s.weight) : null,
         reps: parseInt(s.reps)
@@ -758,7 +795,7 @@ function renderDoneSummary() {
             ${ex.sets.map((s,i) => `
               <div class="summary-set">
                 <div class="summary-set-lbl">Satz ${i+1}</div>
-                <div class="summary-set-val">${fmtWeight(s.weight_kg)} × ${s.reps}</div>
+                <div class="summary-set-val">${fmtWeight(s.weight_kg, ex.isEG)} × ${s.reps}</div>
               </div>`).join('')}
           </div>
         </div>`).join('')}
@@ -964,7 +1001,37 @@ function svgStackedBar(data, groups, colors) {
 }
 
 // ── HISTORY ──
-let openHistId = null, delHistId = null, showManualForm = false;
+let openHistId = null, delHistId = null, showManualForm = false, editHistId = null;
+
+// edit buffer
+let editBuffer = null;
+
+function startEditHist(id) {
+  const t = trainings.find(t => t.id === id);
+  if (!t) return;
+  // deep copy
+  editBuffer = JSON.parse(JSON.stringify(t));
+  editHistId = id;
+  renderHistory();
+}
+
+function cancelEditHist() {
+  editHistId = null; editBuffer = null;
+  renderHistory();
+}
+
+function updateEditSet(id, ei, si, field, val) {
+  if (!editBuffer || editBuffer.id !== id) return;
+  editBuffer.exercises[ei].sets[si][field] = field === 'reps' ? parseInt(val)||0 : (val===''?null:parseFloat(val));
+}
+
+function saveEditHist(id) {
+  if (!editBuffer || editBuffer.id !== id) return;
+  trainings = trainings.map(t => t.id === id ? editBuffer : t);
+  saveTrainings();
+  editHistId = null; editBuffer = null;
+  renderHistory();
+}
 
 function renderHistory() {
   const sorted = [...trainings].reverse();
@@ -973,14 +1040,36 @@ function renderHistory() {
       .map(g=>`<div class="gdot" style="background:${GCOL[g]}">${g[0]}</div>`).join('');
     const isOpen = openHistId === t.id;
     const isDel = delHistId === t.id;
-    const detail = isOpen ? `<div class="hist-detail">${t.exercises.map(ex=>`
+    const isEditing = editHistId === t.id;
+    const detail = isOpen ? `<div class="hist-detail">
+      ${isEditing ? `<div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:8px;">
+        <button class="btn-sec" onclick="cancelEditHist()">Abbrechen</button>
+        <button class="btn-save" onclick="saveEditHist('${t.id}')">✓ Speichern</button>
+      </div>` : `<div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
+        <button onclick="startEditHist('${t.id}')" style="background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:12px;padding:4px 12px;font-family:var(--sans);">✏️ Bearbeiten</button>
+      </div>`}
+      ${t.exercises.map((ex,ei)=>`
       <div class="hist-ex">
         <div class="hist-ex-head">
           <span class="hist-ex-tag" style="background:${GCOL[ex.group]}33;color:${GCOL[ex.group]}">${ex.group}</span>
           <span class="hist-ex-name">${ex.name}</span>
         </div>
         <div class="hist-sets">
-          ${ex.sets.map((s,i)=>`<div class="hist-set"><div class="hist-set-lbl">Satz ${i+1}</div><div class="hist-set-val">${fmtWeight(s.weight_kg)} × ${s.reps}</div></div>`).join('')}
+          ${ex.sets.map((s,si)=> isEditing ? `
+            <div class="hist-set" style="display:flex;flex-direction:column;gap:4px;min-width:80px;">
+              <div class="hist-set-lbl">Satz ${si+1}</div>
+              <div style="display:flex;align-items:center;gap:4px;">
+                <input type="number" inputmode="decimal" value="${s.weight_kg??''}" placeholder="${ex.isEG?'EG':'kg'}"
+                  onchange="updateEditSet('${t.id}',${ei},${si},'weight_kg',this.value)"
+                  style="width:52px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;padding:4px 6px;font-family:var(--mono);text-align:center;">
+                <span style="font-size:11px;color:var(--muted)">×</span>
+                <input type="number" inputmode="numeric" value="${s.reps}"
+                  onchange="updateEditSet('${t.id}',${ei},${si},'reps',this.value)"
+                  style="width:38px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;padding:4px 6px;font-family:var(--mono);text-align:center;">
+              </div>
+            </div>` :
+            `<div class="hist-set"><div class="hist-set-lbl">Satz ${si+1}</div><div class="hist-set-val">${fmtWeight(s.weight_kg, ex.isEG)} × ${s.reps}</div></div>`
+          ).join('')}
         </div>
       </div>`).join('')}
     </div>` : '';
@@ -1216,11 +1305,11 @@ async function deployToGitHub() {
     } catch(e) {}
 
     // get current page HTML
-    // Bump build version — replaces ALL 1774702436782 placeholders including LOCAL_VERSION
+    // Bump build version — replaces ALL 1774787395759 placeholders including LOCAL_VERSION
   const buildNum = Date.now();
   let html = '<!DOCTYPE html>' + document.documentElement.outerHTML;
-  html = html.replace(/gym-v1774702436782/g, 'gym-v' + buildNum);
-  html = html.replace(/1774702436782/g, buildNum);
+  html = html.replace(/gym-v1774787395759/g, 'gym-v' + buildNum);
+  html = html.replace(/1774787395759/g, buildNum);
   const encoded = btoa(unescape(encodeURIComponent(html)));
 
     const body = { message: 'Update gym app ' + new Date().toISOString().slice(0,10), content: encoded };
@@ -1291,7 +1380,7 @@ function exportCSV() {
 let pendingWorker = null;
 
 // current build token — replaced on every deploy
-const LOCAL_VERSION = 'gym-v1774702436782';
+const LOCAL_VERSION = 'gym-v1774787395759';
 
 async function checkForUpdate() {
   try {
@@ -1301,8 +1390,8 @@ async function checkForUpdate() {
     const match = html.match(/const LOCAL_VERSION = '(gym-v[^']+)'/);
     if (!match) return;
     const remoteVersion = match[1];
-    const remoteIsReal = !remoteVersion.includes('1774702436782');
-    const localIsStale = LOCAL_VERSION.includes('1774702436782') || remoteVersion !== LOCAL_VERSION;
+    const remoteIsReal = !remoteVersion.includes('1774787395759');
+    const localIsStale = LOCAL_VERSION.includes('1774787395759') || remoteVersion !== LOCAL_VERSION;
     if (remoteIsReal && localIsStale) {
       document.getElementById('update-banner').classList.add('visible');
     } else {
@@ -1346,7 +1435,7 @@ setTimeout(checkForUpdate, 2000);
 (function() {
   const v = document.getElementById('app-version');
   if (v) {
-    const raw = 'gym-v1774702436782';
+    const raw = 'gym-v1774787395759';
     const ts = raw.replace('gym-v','');
     if (ts && !ts.includes('BUILD')) {
       const d = new Date(parseInt(ts));
@@ -1367,7 +1456,7 @@ setTimeout(checkForUpdate, 2000);
 <!-- PWA Service Worker -->
 <script>
 if ('serviceWorker' in navigator) {
-  const CACHE_VERSION = 'gym-v1774702436782';
+  const CACHE_VERSION = 'gym-v1774787395759';
   const sw = `
     const CACHE = '${CACHE_VERSION}';
     self.addEventListener('install', e => {
